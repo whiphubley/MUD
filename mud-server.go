@@ -8,8 +8,28 @@ import (
         "strings"
 )
 
+func askQuestion(c net.Conn, q string, n string, y string) {
+        c.Write([]byte(string(q)))
+        for {
+                netData, err := bufio.NewReader(c).ReadString('\n')
+                if err != nil {
+                        fmt.Println(err)
+                        return
+                }
+
+                text := strings.TrimSpace(string(netData))
+                if text == "n" {
+			c.Write([]byte(string(n)))
+                        break
+                }
+                c.Write([]byte(string(y)))
+		return
+        }
+        c.Close()
+}
+
 func handleConnection(c net.Conn) {
-	c.Write([]byte(string("Welcome to AndyMUD dare you enter...\n")))
+	askQuestion(c, "Welcome to FlexMUD dare you enter...\n", "Goodbye weakling.\n", "Good luck peasant !!\n")
         for {
                 netData, err := bufio.NewReader(c).ReadString('\n')
                 if err != nil {
@@ -19,9 +39,9 @@ func handleConnection(c net.Conn) {
 
                 text := strings.TrimSpace(string(netData))
                 if text == "STOP" {
+			c.Write([]byte(string("Thanks for playing !!\n")))
                         break
                 }
-		c.Write([]byte(string(text + " you are an arse\n")))
         }
         c.Close()
 }
