@@ -28,8 +28,8 @@ func askQuestion(c net.Conn, q string, n string, y string) {
         c.Close()
 }
 
-func handleConnection(c net.Conn) {
-	askQuestion(c, "Welcome to FlexMUD dare you enter...\n", "Goodbye weakling.\n", "Good luck peasant !!\n")
+func createUser(c net.Conn, q string) {
+        c.Write([]byte(string(q)))
         for {
                 netData, err := bufio.NewReader(c).ReadString('\n')
                 if err != nil {
@@ -38,7 +38,28 @@ func handleConnection(c net.Conn) {
                 }
 
                 text := strings.TrimSpace(string(netData))
-                if text == "STOP" {
+                if text == " " {
+                        c.Write([]byte(string("You need to enter a username...\n")))
+                        break
+                }
+                c.Write([]byte(string("Your username is " + text)))
+                return
+        }
+        c.Close()
+}
+
+func handleConnection(c net.Conn) {
+	askQuestion(c, "Welcome to FlexMUD dare you enter...\n", "Goodbye weakling.\n", "Good luck peasant !!\n")
+	createUser(c, "Please enter you username (new users will be created / existing users will be loaded): ")
+        for {
+                netData, err := bufio.NewReader(c).ReadString('\n')
+                if err != nil {
+                        fmt.Println(err)
+                        return
+                }
+
+                text := strings.TrimSpace(string(netData))
+                if text == "QUIT" {
 			c.Write([]byte(string("Thanks for playing !!\n")))
                         break
                 }
