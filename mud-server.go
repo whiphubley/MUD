@@ -1,58 +1,58 @@
 package main
 
 import (
-        "bufio"
+	"bufio"
 	"database/sql"
-        "fmt"
-        "net"
-        "os"
-        "strings"
+	"fmt"
+	"net"
+	"os"
+	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 func askQuestion(c net.Conn, q string, n string, y string) {
-        c.Write([]byte(string(q)))
-        for {
-                netData, err := bufio.NewReader(c).ReadString('\n')
-                if err != nil {
-                        fmt.Println(err)
-                        return
-                }
+	c.Write([]byte(string(q)))
+	for {
+		netData, err := bufio.NewReader(c).ReadString('\n')
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 
-                text := strings.TrimSpace(string(netData))
-                if text == "n" {
+		text := strings.TrimSpace(string(netData))
+		if text == "n" {
 			c.Write([]byte(string(n)))
-                        break
-                }
-                c.Write([]byte(string(y)))
+			break
+		}
+		c.Write([]byte(string(y)))
 		return
-        }
-        c.Close()
+	}
+	c.Close()
 }
 
 func createUser(c net.Conn, q string) {
-        c.Write([]byte(string(q)))
-        for {
-                netData, err := bufio.NewReader(c).ReadString('\n')
-                if err != nil {
-                        fmt.Println(err)
-                        return
-                }
-
-                username := strings.TrimSpace(string(netData))
-
-                if username == "" {
-			c.Write([]byte(string("You need to enter a username: ")))
-                } else {
-		database, _ := sql.Open("sqlite3", "./mud-database.db")
-		insert_user, _ := database.Prepare("INSERT INTO users (username, score, room, weapon) VALUES (?, ?, ?, ?)")
-		insert_user.Exec(username, 0, 1, 1)
-                c.Write([]byte(string("Welcome " + username)))
-                return
+	c.Write([]byte(string(q)))
+	for {
+		netData, err := bufio.NewReader(c).ReadString('\n')
+		if err != nil {
+			fmt.Println(err)
+			return
 		}
-        }
-        c.Close()
+
+		username := strings.TrimSpace(string(netData))
+
+		if username == "" {
+			c.Write([]byte(string("You need to enter a username: ")))
+		} else {
+			database, _ := sql.Open("sqlite3", "./mud-database.db")
+			insert_user, _ := database.Prepare("INSERT INTO users (username, score, room, weapon) VALUES (?, ?, ?, ?)")
+			insert_user.Exec(username, 0, 1, 1)
+			c.Write([]byte(string("Welcome " + username)))
+			return
+		}
+	}
+	c.Close()
 }
 
 func handleConnection(c net.Conn) {
@@ -60,43 +60,43 @@ func handleConnection(c net.Conn) {
 	askQuestion(c, "Welcome to FlexMUD dare you enter...(y/n): ", "Goodbye weakling.\n", "Good luck !!\n")
 	// get user details
 	createUser(c, "Please enter you username (new users will be created / existing users will be loaded): ")
-        for {
-                netData, err := bufio.NewReader(c).ReadString('\n')
-                if err != nil {
-                        fmt.Println(err)
-                        return
-                }
+	for {
+		netData, err := bufio.NewReader(c).ReadString('\n')
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 
-                text := strings.TrimSpace(string(netData))
-                if text == "QUIT" {
+		text := strings.TrimSpace(string(netData))
+		if text == "QUIT" {
 			c.Write([]byte(string("Thanks for playing !!\n")))
-                        break
-                }
-        }
-        c.Close()
+			break
+		}
+	}
+	c.Close()
 }
 
 func main() {
-        arguments := os.Args
-        if len(arguments) == 1 {
-                fmt.Println("Please provide a port number!")
-                return
-        }
+	arguments := os.Args
+	if len(arguments) == 1 {
+		fmt.Println("Please provide a port number!")
+		return
+	}
 
-        PORT := ":" + arguments[1]
-        l, err := net.Listen("tcp4", PORT)
-        if err != nil {
-                fmt.Println(err)
-                return
-        }
-        defer l.Close()
+	PORT := ":" + arguments[1]
+	l, err := net.Listen("tcp4", PORT)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer l.Close()
 
-        for {
-                c, err := l.Accept()
-                if err != nil {
-                        fmt.Println(err)
-                        return
-                }
-                go handleConnection(c)
-        }
+	for {
+		c, err := l.Accept()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		go handleConnection(c)
+	}
 }
