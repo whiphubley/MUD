@@ -2,10 +2,13 @@ package main
 
 import (
         "bufio"
+	"database/sql"
         "fmt"
         "net"
         "os"
         "strings"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func askQuestion(c net.Conn, q string, n string, y string) {
@@ -37,19 +40,25 @@ func createUser(c net.Conn, q string) {
                         return
                 }
 
-                text := strings.TrimSpace(string(netData))
-                if text == " " {
-                        c.Write([]byte(string("You need to enter a username...\n")))
-                        break
-                }
-                c.Write([]byte(string("Your username is " + text)))
+                username := strings.TrimSpace(string(netData))
+
+                if username == "" {
+			c.Write([]byte(string("You need to enter a username: ")))
+                } else {
+		database, _ := sql.Open("sqlite3", "./mud-database.db")
+		insert_user, _ := database.Prepare("INSERT INTO users (username, score, room, weapon) VALUES (?, ?, ?, ?)")
+		insert_user.Exec(username, 0, 1, 1)
+                c.Write([]byte(string("Welcome " + username)))
                 return
+		}
         }
         c.Close()
 }
 
 func handleConnection(c net.Conn) {
-	askQuestion(c, "Welcome to FlexMUD dare you enter...\n", "Goodbye weakling.\n", "Good luck peasant !!\n")
+	// choose to enter the game
+	askQuestion(c, "Welcome to FlexMUD dare you enter...(y/n): ", "Goodbye weakling.\n", "Good luck !!\n")
+	// get user details
 	createUser(c, "Please enter you username (new users will be created / existing users will be loaded): ")
         for {
                 netData, err := bufio.NewReader(c).ReadString('\n')
