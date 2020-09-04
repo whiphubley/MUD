@@ -46,9 +46,12 @@ func createUser(c net.Conn, q string) {
 			c.Write([]byte(string("You need to enter a username: ")))
 		} else {
 			database, _ := sql.Open("sqlite3", "./mud-database.db")
-			insert_user, _ := database.Prepare("INSERT INTO users (username, score, room, weapon) VALUES (?, ?, ?, ?)")
-			insert_user.Exec(username, 0, 1, 1)
-			c.Write([]byte(string("Welcome " + username)))
+			_, err := database.Exec("INSERT OR FAIL INTO users (username, score, room, weapon) VALUES (?, ?, ?, ?)", username, 0, 1, 1)
+			if err != nil {
+				c.Write([]byte(string("Welcome back " + username + "\n")))
+				return
+			}
+			c.Write([]byte(string("Welcome " + username + "\n")))
 			return
 		}
 	}
