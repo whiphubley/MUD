@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"strconv"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -31,13 +32,13 @@ func askQuestion(c net.Conn, q string, n string, y string) {
 	c.Close()
 }
 
-func createUser(c net.Conn, q string) {
+func createUser(c net.Conn, q string) string {
 	c.Write([]byte(string(q)))
 	for {
 		netData, err := bufio.NewReader(c).ReadString('\n')
 		if err != nil {
 			fmt.Println(err)
-			return
+			return netData
 		}
 
 		username := strings.TrimSpace(string(netData))
@@ -49,20 +50,33 @@ func createUser(c net.Conn, q string) {
 			_, err := database.Exec("INSERT OR FAIL INTO users (username, score, room, weapon) VALUES (?, ?, ?, ?)", username, 0, 1, 1)
 			if err != nil {
 				c.Write([]byte(string("Welcome back " + username + "\n")))
-				return
+				return username
 			}
 			c.Write([]byte(string("Welcome " + username + "\n")))
-			return
+			return username
 		}
 	}
 	c.Close()
+	return string("testuser")
+}
+
+func enterRoom(c net.Conn, username string, room int) {
+	database, _ := sql.Open("sqlite3", "./mud-database.db")
+	_, err := database.Exec("UPDATE users SET room = ? WHERE username = ?", room, username)
+	if err !=nil {
+		fmt.Println(err)
+		return
+	}
+	c.Write([]byte(string("DEBUG: " + username + " has just entered room " + strconv.Itoa(room) + "\n")))
 }
 
 func handleConnection(c net.Conn) {
 	// choose to enter the game
 	askQuestion(c, "Welcome to FlexMUD dare you enter...(y/n): ", "Goodbye weakling.\n", "Good luck !!\n")
 	// get user details
-	createUser(c, "Please enter you username (new users will be created / existing users will be loaded): ")
+	username := createUser(c, "Please enter you username (new users will be created / existing users will be loaded): ")
+	// enter the map
+	enterRoom(c, username, 1)
 	for {
 		netData, err := bufio.NewReader(c).ReadString('\n')
 		if err != nil {
