@@ -34,12 +34,16 @@ func main() {
     }
 
     fmt.Println("ROOM:")
-    rows_room, _ := database.Query("SELECT id, desc FROM room")
+    rows_room, _ := database.Query("SELECT id, desc, n, e, s, w FROM room")
     var id_room int
     var desc_room string
+    var n_room int
+    var e_room int
+    var s_room int
+    var w_room int
     for rows_room.Next() {
-        rows_room.Scan(&id_room, &desc_room)
-        fmt.Println(strconv.Itoa(id_room) + ": " + desc_room)
+        rows_room.Scan(&id_room, &desc_room, &n_room, &e_room, &s_room, &w_room)
+        fmt.Println(strconv.Itoa(id_room) + ": " + desc_room + " " + strconv.Itoa(n_room) + " " + strconv.Itoa(e_room) + " " + strconv.Itoa(s_room) + " " + strconv.Itoa(w_room))
     }
 
     fmt.Println("WEAPON:")

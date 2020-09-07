@@ -4,10 +4,11 @@ import (
 	"bufio"
 	"database/sql"
 	"fmt"
+	"log"
 	"net"
 	"os"
+	//"strconv"
 	"strings"
-	"strconv"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -67,7 +68,51 @@ func enterRoom(c net.Conn, username string, room int) {
 		fmt.Println(err)
 		return
 	}
-	c.Write([]byte(string("DEBUG: " + username + " has just entered room " + strconv.Itoa(room) + "\n")))
+	var desc string
+	database.QueryRow("SELECT desc FROM room WHERE id = ?", room).Scan(&desc)
+	c.Write([]byte(string(desc + "\n" + "# ")))
+	handleCommands(c, username, room)
+}
+
+func handleCommands(c net.Conn, username string, room int) {
+	for {
+		netData, err := bufio.NewReader(c).ReadString('\n')
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		text := strings.TrimSpace(string(netData))
+		database, _ := sql.Open("sqlite3", "./mud-database.db")
+		var result int
+		if text == "" {
+			c.Write([]byte(string("You need to enter a command: ")))
+		} else if text == "n" {
+			err = database.QueryRow("SELECT n FROM room WHERE id = ?", room).Scan(&result)
+			if err != nil {
+				log.Fatal(err)
+			}
+			enterRoom(c, username, result)
+		} else if text == "e" {
+			err = database.QueryRow("SELECT e FROM room WHERE id = ?", room).Scan(&result)
+			if err != nil {
+				log.Fatal(err)
+			}
+			enterRoom(c, username, result)
+		} else if text == "s" {
+			err = database.QueryRow("SELECT s FROM room WHERE id = ?", room).Scan(&result)
+			if err != nil {
+				log.Fatal(err)
+			}
+			enterRoom(c, username, result)
+		} else if text == "w" {
+			err = database.QueryRow("SELECT w FROM room WHERE id = ?", room).Scan(&result)
+			if err != nil {
+				log.Fatal(err)
+			}
+			enterRoom(c, username, result)
+		}
+	}
 }
 
 func handleConnection(c net.Conn) {
