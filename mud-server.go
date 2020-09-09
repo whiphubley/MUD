@@ -84,7 +84,7 @@ func handleCommands(c net.Conn, username string, room int) {
 
 		text := strings.TrimSpace(string(netData))
 		if text == "" {
-			c.Write([]byte(string("You need to enter a command: ")))
+			c.Write([]byte(string("You need to enter a command...\n" + "# ")))
 		} else if ( text == "n" || text == "e" || text == "s" || text == "w" ) {
 			query := fmt.Sprintf("SELECT %v FROM room WHERE id = ?", text)
 			var result int
@@ -96,6 +96,8 @@ func handleCommands(c net.Conn, username string, room int) {
 		} else if text == "QUIT" {
 			c.Write([]byte(string("Thanks for playing " + username + " !!\n")))
 			os.Exit(0)
+		} else {
+			c.Write([]byte(string("COMMANDS:\n\n" + "n: MOVE NORTH\n" + "e: MOVE EAST\n" + "s: MOVE SOUTH\n" + "w: MOVE WEST\n" + "\n# ")))
 		}
 	}
 }
