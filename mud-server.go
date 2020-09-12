@@ -7,13 +7,14 @@ import (
 	"log"
 	"net"
 	"os"
-	//"strconv"
+	"strconv"
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var database, _ = sql.Open("sqlite3", "./mud-database.db")
+var m = make(map[string]net.Conn)
 
 func askQuestion(c net.Conn, q string, n string, y string) {
 	c.Write([]byte(string(q)))
@@ -94,8 +95,8 @@ func handleCommands(c net.Conn, username string, room int) {
 			}
 			enterRoom(c, username, result)
 		} else if text == "QUIT" {
-			c.Write([]byte(string("Thanks for playing " + username + " !!\n")))
-			os.Exit(0)
+			c.Write([]byte(string("Thanks for playing " + username + " !!\nEscape character is '^]'\n")))
+			break
 		} else {
 			c.Write([]byte(string("COMMANDS:\n\n" + "n: MOVE NORTH\n" + "e: MOVE EAST\n" + "s: MOVE SOUTH\n" + "w: MOVE WEST\n" + "\n# ")))
 		}
@@ -107,6 +108,10 @@ func handleConnection(c net.Conn) {
 	askQuestion(c, "Welcome to FlexMUD dare you enter...(y/n): ", "Goodbye weakling.\n", "Good luck !!\n")
 	// get user details
 	username := createUser(c, "Please enter you username (new users will be created / existing users will be loaded): ")
+	// map username to connection
+	m[username] = c
+	n := len(m)
+	fmt.Println(strconv.Itoa(n))
 	// enter the map at last location
 	var room int
 	database.QueryRow("SELECT room FROM users WHERE username = ?", username).Scan(&room)
