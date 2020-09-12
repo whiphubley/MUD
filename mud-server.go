@@ -7,7 +7,7 @@ import (
 	"log"
 	"net"
 	"os"
-	"strconv"
+	//"strconv"
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -64,14 +64,37 @@ func createUser(c net.Conn, q string) string {
 }
 
 func enterRoom(c net.Conn, username string, room int) {
-	_, err := database.Exec("UPDATE users SET room = ? WHERE username = ?", room, username)
-	if err !=nil {
+	// tell other players in the room you have entered
+	rows_users, err := database.Query("SELECT username FROM users WHERE room = ? AND username != ?", room, username)
+	// handle an empty set
+	if err != nil {
+		if err == sql.ErrNoRows {
+			fmt.Println("EMPTY SET")
+		} else {
+			fmt.Println(err)
+			return
+		}
+		// if the user from the db is connected then send them a message
+	} else {
+		var user string
+		for rows_users.Next() {
+			rows_users.Scan(&user)
+			if conn, ok := m[user]; ok {
+				conn.Write([]byte(string(username + " has entered the room\n# ")))
+			}
+		}
+	}
+	// update the room you are in
+	_, err = database.Exec("UPDATE users SET room = ? WHERE username = ?", room, username)
+	if err != nil {
 		fmt.Println(err)
 		return
 	}
+	// show the room description
 	var desc string
 	database.QueryRow("SELECT desc FROM room WHERE id = ?", room).Scan(&desc)
 	c.Write([]byte(string(desc + "\n" + "# ")))
+	// handle user input
 	handleCommands(c, username, room)
 }
 
@@ -86,7 +109,7 @@ func handleCommands(c net.Conn, username string, room int) {
 		text := strings.TrimSpace(string(netData))
 		if text == "" {
 			c.Write([]byte(string("You need to enter a command...\n" + "# ")))
-		} else if ( text == "n" || text == "e" || text == "s" || text == "w" ) {
+		} else if text == "n" || text == "e" || text == "s" || text == "w" {
 			query := fmt.Sprintf("SELECT %v FROM room WHERE id = ?", text)
 			var result int
 			err = database.QueryRow(query, room).Scan(&result)
@@ -110,8 +133,6 @@ func handleConnection(c net.Conn) {
 	username := createUser(c, "Please enter you username (new users will be created / existing users will be loaded): ")
 	// map username to connection
 	m[username] = c
-	n := len(m)
-	fmt.Println(strconv.Itoa(n))
 	// enter the map at last location
 	var room int
 	database.QueryRow("SELECT room FROM users WHERE username = ?", username).Scan(&room)
